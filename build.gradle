@@ -30,6 +30,17 @@ dependencyCheck {
         nodeEnabled = false
         nodeAuditEnabled = false
         nuspecEnabled = false
+        // kotlin-gradle-plugin is a direct dependency here, and it embeds yarn.lock and
+        // pnpm-lock.yaml resources for its Kotlin/JS targets. The analyzer extracts them, calls
+        // the NPM Audit API, cannot read a result, and reports `Analysis failed` — a lock file
+        // belonging to the Kotlin plugin's own test fixtures fails this repository's scan. Set
+        // here rather than in the convention plugins: their consumers scan runtimeClasspath, so
+        // no plugin jar reaches them and none has ever hit this. nodeAuditEnabled above does not
+        // cover these — Yarn and pnpm are separate analyzers behind their own nested flags.
+        nodeAudit {
+            yarnEnabled = false
+            pnpmEnabled = false
+        }
     }
 }
 
