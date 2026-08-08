@@ -56,7 +56,8 @@ def writeSuppressions = tasks.register('writeDependencyCheckSuppressions') {
         compiler and Gradle-tooling code. It is matched against kotlin-stdlib and kotlin-reflect
         only because they carry the same jetbrains:kotlin CPE as the compiler; neither ships any
         part of the build-cache metadata path. The Kotlin pin is tracked in build-conventions,
-        whose own scan still reports the advisory against kotlin-gradle-plugin. This suppression
+        which suppresses the same advisory against its own toolchain classpath under this same
+        expiry, so no scan reports it until the date passes or the pin moves. This suppression
         expires so the finding returns if the pin has not moved.</notes>
         <packageUrl regex="true">^pkg:maven/org\\.jetbrains\\.kotlin/kotlin-(stdlib|reflect).*$</packageUrl>
         <cve>CVE-2026-53914</cve>

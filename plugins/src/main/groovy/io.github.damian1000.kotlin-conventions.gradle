@@ -237,7 +237,8 @@ def writeSuppressions = tasks.register('writeDependencyCheckSuppressions') {
         compiler and Gradle-tooling code. It is matched against kotlin-stdlib and kotlin-reflect
         only because they carry the same jetbrains:kotlin CPE as the compiler; neither ships any
         part of the build-cache metadata path. The Kotlin pin is tracked in build-conventions,
-        whose own scan still reports the advisory against kotlin-gradle-plugin. This suppression
+        which suppresses the same advisory against its own toolchain classpath under this same
+        expiry, so no scan reports it until the date passes or the pin moves. This suppression
         expires so the finding returns if the pin has not moved.</notes>
         <packageUrl regex="true">^pkg:maven/org\\.jetbrains\\.kotlin/kotlin-(stdlib|reflect).*$</packageUrl>
         <cve>CVE-2026-53914</cve>
@@ -265,8 +266,9 @@ dependencyCheck {
     // Scan what the service ships. The default scans every configuration, which drags in the
     // Kotlin compiler's own artifacts — the first scheduled run failed every Kotlin repository on
     // CVE-2026-53914 in abi-tools, a build-time toolchain jar that no service deploys. That CVE
-    // is real and tracked where the decision lives: the Kotlin pin in build-conventions, whose
-    // own scan still reports it because kotlin-gradle-plugin is a direct dependency there.
+    // is real and tracked where the decision lives: the Kotlin pin in build-conventions, which
+    // suppresses it against its own toolchain classpath under a dated expiry rather than in the
+    // scan output, because the pin is blocked on a Kotlin 2.4.20 GA release.
     scanConfigurations = ['runtimeClasspath']
     if (nvdApiKey) {
         nvd {
