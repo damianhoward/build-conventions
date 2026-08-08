@@ -9,7 +9,7 @@ plugins {
     id 'org.owasp.dependencycheck' version '13.0.0'
 }
 
-version = '0.4.15'
+version = '0.4.16'
 
 repositories {
     mavenCentral()
@@ -17,7 +17,50 @@ repositories {
 
 def nvdApiKey = providers.environmentVariable('NVD_API_KEY').orNull
 
+// CVE-2026-53914 is unsafe deserialization of Kotlin build-cache metadata. This repository
+// depends on kotlin-gradle-plugin directly, so the advisory lands on the whole toolchain here —
+// twenty-one artifacts, all of them build-time code on a Gradle plugin's classpath and none of
+// them deployed by anything. The pin cannot move: the fix is Kotlin 2.4.20 and no GA release
+// exists.
+//
+// This scan reported the advisory until now only in the sense that it never ran; the first
+// completed run was 2026-08-08. Leaving it failing would trade one visible advisory for every
+// future one, because a check that is always red reports nothing new — and this is the scan that
+// covers the plugin classpath no consumer scan sees. The expiry is what brings it back, and it
+// is deliberately the same date the convention plugins use for their own narrower suppression,
+// so the two cannot drift into disagreeing about the same advisory.
+def suppressions = layout.buildDirectory.file('dependency-check/kotlin-cpe-suppressions.xml')
+def writeSuppressions = tasks.register('writeDependencyCheckSuppressions') {
+    description = 'Writes this repository\'s dependency-check suppression file.'
+    outputs.file(suppressions)
+    def target = suppressions
+    doLast {
+        def file = target.get().asFile
+        file.parentFile.mkdirs()
+        file.text = '''<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <suppress until="2026-11-01Z">
+        <notes>CVE-2026-53914 is unsafe deserialization of Kotlin build-cache metadata. Every
+        org.jetbrains.kotlin artifact carries cpe:/a:jetbrains:kotlin at the compiler's version,
+        so the advisory matches the whole toolchain that kotlin-gradle-plugin brings onto this
+        module's classpath. All of it is build-time code for a Gradle plugin; none of it is
+        deployed. The pin is blocked on a Kotlin 2.4.20 GA release and tracked in the roadmap and
+        in the Dependabot ignore for org.jetbrains.kotlin.jvm. This suppression expires so the
+        finding returns if the pin has not moved by then.</notes>
+        <packageUrl regex="true">^pkg:maven/org\\.jetbrains\\.kotlin/.*$</packageUrl>
+        <cve>CVE-2026-53914</cve>
+    </suppress>
+</suppressions>
+'''
+    }
+}
+
+tasks.named('dependencyCheckAggregate') {
+    dependsOn writeSuppressions
+}
+
 dependencyCheck {
+    suppressionFile = suppressions.get().asFile.absolutePath
     failBuildOnCVSS = 7.0f
     formats = ['HTML', 'JSON']
     if (nvdApiKey) {
