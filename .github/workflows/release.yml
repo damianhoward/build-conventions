@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   release:
-    uses: damian1000/.github/.github/workflows/release.yml@main
+    uses: damianhoward/.github/.github/workflows/release.yml@main
     with:
       build-command: clean build
       # Notes only: consumers resolve these plugins from JitPack, which builds the artifact from
