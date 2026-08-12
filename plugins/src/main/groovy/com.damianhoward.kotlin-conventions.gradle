@@ -1,4 +1,4 @@
-// Shared Kotlin build conventions for the damian1000 repositories: JDK 25 toolchain, the pinned
+// Shared Kotlin build conventions for the damianhoward repositories: JDK 25 toolchain, the pinned
 // Kotlin version, the 90% JaCoCo instruction gate, Spotless (ktlint + Prettier for config/docs),
 // OWASP dependency-check, and the JUnit 6 test wiring. A consumer applies this plugin and then
 // declares only what is specific to it (its dependencies, an application main class). Front-end

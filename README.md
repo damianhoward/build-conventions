@@ -1,17 +1,17 @@
 # build-conventions
 
-The shared Gradle build platform for the `damian1000` repositories, published via JitPack:
+The shared Gradle build platform for the `damianhoward` repositories, published via JitPack:
 convention plugins plus a shared version catalog (`:catalog`). A repository applies one
 convention plugin and then declares only what is specific to it — its dependencies and, for
 an application, its main class.
 
 ## Plugins
 
-| Plugin                                    | For               | Provides                                                                                                    |
-| ----------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- |
-| `io.github.damian1000.kotlin-conventions` | Kotlin JVM        | JDK 25 toolchain, pinned Kotlin, 90% JaCoCo instruction gate, Spotless (ktlint + Prettier), OWASP, JUnit 6. |
-| `io.github.damian1000.java-conventions`   | plain Java        | The same, with Spotless JDK-agnostic Java hygiene in place of ktlint.                                       |
-| `io.github.damian1000.root-conventions`   | multi-module root | Repo-wide Spotless (Gradle scripts, CI config, docs) and the OWASP aggregate; modules apply a plugin above. |
+| Plugin                                | For               | Provides                                                                                                    |
+| ------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| `com.damianhoward.kotlin-conventions` | Kotlin JVM        | JDK 25 toolchain, pinned Kotlin, 90% JaCoCo instruction gate, Spotless (ktlint + Prettier), OWASP, JUnit 6. |
+| `com.damianhoward.java-conventions`   | plain Java        | The same, with Spotless JDK-agnostic Java hygiene in place of ktlint.                                       |
+| `com.damianhoward.root-conventions`   | multi-module root | Repo-wide Spotless (Gradle scripts, CI config, docs) and the OWASP aggregate; modules apply a plugin above. |
 
 Front-end tooling in `kotlin-conventions` is content-driven: web assets under
 `src/main/resources/web` are Prettier-formatted under `spotlessCheck`, and a `package.json`
@@ -50,8 +50,8 @@ pluginManagement {
     }
     resolutionStrategy {
         eachPlugin {
-            if (requested.id.namespace == 'io.github.damian1000') {
-                useModule("com.github.damian1000.build-conventions:plugins:${requested.version}")
+            if (requested.id.namespace == 'com.damianhoward') {
+                useModule("com.github.damianhoward.build-conventions:plugins:${requested.version}")
             }
         }
     }
@@ -62,7 +62,7 @@ pluginManagement {
 
 ```groovy
 plugins {
-    id 'io.github.damian1000.kotlin-conventions' version '0.4.13'
+    id 'com.damianhoward.kotlin-conventions' version '0.4.13'
     id 'application' // if the repository is an application
 }
 
@@ -102,7 +102,7 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         create('deps') {
-            from 'com.github.damian1000.build-conventions:catalog:0.4.13'
+            from 'com.github.damianhoward.build-conventions:catalog:0.4.13'
         }
     }
 }
