@@ -1,6 +1,6 @@
 // The root holds only the repo-wide version and formatting; :plugins publishes the convention
 // plugins and :catalog the shared version catalog. JitPack serves them as
-// com.github.damian1000.build-conventions:plugins and :catalog.
+// com.github.damianhoward.build-conventions:plugins and :catalog.
 plugins {
     id 'com.diffplug.spotless' version '8.9.0'
     // The platform scans its own dependencies too: the Kotlin, Spotless and dependency-check

@@ -10,5 +10,5 @@ rootProject.name = 'build-conventions'
 
 // :plugins publishes the convention plugins, :catalog the shared version catalog. JitPack
 // serves multi-module builds under the dotted group, so consumers reference
-// com.github.damian1000.build-conventions:plugins and :catalog.
+// com.github.damianhoward.build-conventions:plugins and :catalog.
 include ':plugins', ':catalog'
