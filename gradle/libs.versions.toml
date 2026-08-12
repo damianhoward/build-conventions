@@ -1,4 +1,4 @@
-# Versions genuinely shared across the damian1000 repositories. Application-specific
+# Versions genuinely shared across the damianhoward repositories. Application-specific
 # dependencies stay in each repo's build file; a version belongs here only when two or
 # more repos declare it.
 

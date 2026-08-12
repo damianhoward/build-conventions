@@ -1,4 +1,4 @@
-// Shared Java build conventions for the damian1000 repositories: JDK 25 toolchain, the 90% JaCoCo
+// Shared Java build conventions for the damianhoward repositories: JDK 25 toolchain, the 90% JaCoCo
 // instruction gate, Spotless (JDK-agnostic Java hygiene + Prettier for config/docs), OWASP
 // dependency-check, and the JUnit 6 test wiring. A consumer applies this plugin and declares only
 // what is specific to it.

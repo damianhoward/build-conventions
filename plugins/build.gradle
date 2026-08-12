@@ -6,7 +6,7 @@ plugins {
     id 'maven-publish'
 }
 
-group = 'com.github.damian1000.build-conventions'
+group = 'com.github.damianhoward.build-conventions'
 version = rootProject.version
 
 java {
