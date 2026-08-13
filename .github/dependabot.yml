@@ -8,12 +8,19 @@ updates:
     ignore:
       # Consumers inherit this Kotlin version. CodeQL no longer caps it — github/codeql#21938
       # closed 2026-07-08 and CI runs CodeQL 2.26.1, which supports Kotlin 2.4. Two things now
-      # hold the pin: CVE-2026-53914 (GHSA-r937-wjx7-w2jp) is fixed in 2.4.20, which has no GA
-      # release (Maven Central's newest is 2.4.20-Beta2), so 2.4.10 is no less vulnerable than
-      # 2.3.21; and ktlint 1.5.0 fails under 2.4.10 with NoClassDefFoundError on
+      # hold the pin: CVE-2026-53914 (GHSA-r937-wjx7-w2jp) is fixed in 2.4.20, whose newest
+      # published build is 2.4.20-RC rather than a GA release, so 2.4.10 is no less vulnerable
+      # than 2.3.21; and ktlint 1.5.0 fails under 2.4.10 with NoClassDefFoundError on
       # EditorConfigDefaults, while even ktlint 1.8.0 still embeds the Kotlin 2.2.21 compiler.
-      # Bump when 2.4.20 ships GA, together with a ktlint version that supports it.
+      #
+      # The range ends at 2.4.20 rather than ignoring the dependency outright. GitHub runs a
+      # security update job against the open advisory whatever this file says, and an unbounded
+      # ignore left it with every candidate ignored, so it failed all_versions_ignored daily —
+      # a red run reporting nothing but the pin it was told about. Bounded, 2.4.20 proposes
+      # itself the day it ships GA, and the required checks decide it: the bump only merges if
+      # spotlessCheck passes, which is exactly the ktlint compatibility this is waiting on.
       - dependency-name: "org.jetbrains.kotlin:kotlin-gradle-plugin"
+        versions: ["[2.4.0,2.4.20)"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
