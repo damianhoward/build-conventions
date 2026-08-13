@@ -13,12 +13,16 @@ updates:
       # than 2.3.21; and ktlint 1.5.0 fails under 2.4.10 with NoClassDefFoundError on
       # EditorConfigDefaults, while even ktlint 1.8.0 still embeds the Kotlin 2.2.21 compiler.
       #
-      # The range ends at 2.4.20 rather than ignoring the dependency outright. GitHub runs a
-      # security update job against the open advisory whatever this file says, and an unbounded
-      # ignore left it with every candidate ignored, so it failed all_versions_ignored daily —
-      # a red run reporting nothing but the pin it was told about. Bounded, 2.4.20 proposes
-      # itself the day it ships GA, and the required checks decide it: the bump only merges if
-      # spotlessCheck passes, which is exactly the ktlint compatibility this is waiting on.
+      # The range ends at 2.4.20 rather than ignoring the dependency outright, so that 2.4.20
+      # proposes itself the day it ships GA instead of the exception outliving its reason. The
+      # required checks then decide it: the bump only merges if spotlessCheck passes, which is
+      # exactly the ktlint compatibility this is waiting on.
+      #
+      # It does not stop the red run on the Actions tab. GitHub raises a security update job when
+      # an advisory arrives whatever this file says, and that job fails whenever it cannot act —
+      # all_versions_ignored here, security_update_dependency_not_found for the transitive jsoup
+      # and jackson advisories that preceded it. It is one run per advisory, not a schedule, and
+      # the alert rather than the run is what to read.
       - dependency-name: "org.jetbrains.kotlin:kotlin-gradle-plugin"
         versions: ["[2.4.0,2.4.20)"]
   - package-ecosystem: "github-actions"
