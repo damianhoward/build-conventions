@@ -4,7 +4,7 @@
 
 [versions]
 commons-lang = "3.20.0"
-flyway = "13.2.0"
+flyway = "13.3.0"
 gson = "2.14.0"
 h2 = "2.4.240"
 hamcrest = "3.0"
