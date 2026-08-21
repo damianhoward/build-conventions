@@ -42,6 +42,14 @@ dependencies {
 // jsoup arrives through dependency-check-gradle at 1.22.2, which CVE-2026-71497 covers: Cleaner
 // can be made to emit markup through a custom raw-text element. Fixed in 1.23.1.
 //
+// httpclient5 arrives the same way, at 5.6.3, with httpclient5-cache still at 5.6.2 beneath it.
+// CVE-2026-71290 scores 9.1: HostnameVerificationPolicy#BUILTIN has no effect on the async
+// client, so a server can be impersonated with a certificate for another domain. NVD's range is
+// >= 5.4, < 5.6.4. This is the scanner's own HTTP client — the thing that fetches the NVD feed —
+// so the exposure is a Gradle plugin talking to NIST, not a service talking to a venue. It is
+// still the wrong version to ship on twelve consumers' buildscript classpaths, and 5.6.4 is a
+// patch release that costs nothing to take.
+//
 // A resolutionStrategy rather than a dependency constraint, and the difference is load-bearing.
 // A constraint is published into this module's POM, so it reaches every consumer's buildscript
 // classpath — and doing that broke ktlint in orderbook: 25 files failed spotlessKotlinCheck with
@@ -57,5 +65,7 @@ dependencies {
 configurations.configureEach {
     resolutionStrategy {
         force 'org.jsoup:jsoup:1.23.1'
+        force 'org.apache.httpcomponents.client5:httpclient5:5.6.4'
+        force 'org.apache.httpcomponents.client5:httpclient5-cache:5.6.4'
     }
 }
