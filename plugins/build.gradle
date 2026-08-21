@@ -36,7 +36,7 @@ dependencies {
     // current release — resolves jackson-databind 2.21.3 through open-vulnerability-clients,
     // which 11 advisories cover, 3 of them high. Spotless is not a source of Jackson at all, so
     // the 8.9.0 upgrade does not address them.
-    implementation platform('com.fasterxml.jackson:jackson-bom:2.22.1')
+    implementation platform('com.fasterxml.jackson:jackson-bom:2.22.2')
 }
 
 // jsoup arrives through dependency-check-gradle at 1.22.2, which CVE-2026-71497 covers: Cleaner
