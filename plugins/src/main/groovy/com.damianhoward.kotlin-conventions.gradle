@@ -1,6 +1,7 @@
 // Shared Kotlin build conventions for the damianhoward repositories: JDK 25 toolchain, the pinned
 // Kotlin version, the 90% JaCoCo instruction gate, Spotless (ktlint + Prettier for config/docs),
-// OWASP dependency-check, and the JUnit 6 test wiring. A consumer applies this plugin and then
+// OWASP dependency-check, the JUnit 6 test wiring, and — where a project has benchmarks — the
+// jmh source set compiling as part of `check`. A consumer applies this plugin and then
 // declares only what is specific to it (its dependencies, an application main class). Front-end
 // tooling is content-driven: web assets under src/main/resources/web are Prettier-formatted, and
 // a package.json wires `npm run lint` (ESLint) into `check`.
@@ -95,6 +96,24 @@ afterEvaluate {
                         'the suite knowingly without them.')
             }
         }
+    }
+}
+
+// A benchmark source set is compiled by nothing unless something asks for it: `build` covers main
+// and test, and the jmh plugin's own tasks only run when a benchmark is run. So a benchmark that
+// stops compiling stays broken silently, and orderbook's did — for however long it took to notice
+// that a class it passed to MarketSession was no longer the listener that interface wanted.
+//
+// That matters more than an unused source set normally would, because the benchmarks are evidence:
+// a README that advertises throughput, latency and allocation numbers is making a claim a reviewer
+// can try, and "it does not compile" is the worst answer available. This is the same shape as the
+// `clean check` gap in document 16 — a gate that never covered the thing it was trusted for.
+//
+// Reacted to rather than assumed: only a project that actually applies the jmh plugin gains the
+// dependency, so this is a no-op everywhere else.
+plugins.withId('me.champeau.jmh') {
+    tasks.named('check') {
+        dependsOn 'compileJmhKotlin'
     }
 }
 
