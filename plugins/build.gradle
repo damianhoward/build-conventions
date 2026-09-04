@@ -28,7 +28,7 @@ dependencies {
     // The real artifacts behind the plugin ids the convention plugins apply. A precompiled
     // script plugin can only `apply` a third-party plugin that is on this project's classpath.
     implementation 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.21'
-    implementation 'com.diffplug.spotless:spotless-plugin-gradle:8.10.0'
+    implementation 'com.diffplug.spotless:spotless-plugin-gradle:8.10.1'
     implementation 'org.owasp:dependency-check-gradle:13.0.0'
 
     // The same Jackson floor the convention plugins put under every consumer, applied here
