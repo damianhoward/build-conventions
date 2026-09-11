@@ -10,7 +10,7 @@ h2 = "2.4.240"
 hamcrest = "3.0"
 kafka = "4.3.1"
 oracle = "23.26.3.0.0"
-slf4j = "2.0.18"
+slf4j = "2.0.19"
 testcontainers = "1.21.4"
 
 [libraries]
