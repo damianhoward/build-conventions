@@ -6,7 +6,7 @@
 commons-lang = "3.20.0"
 flyway = "13.4.0"
 gson = "2.14.0"
-h2 = "2.4.240"
+h2 = "2.5.250"
 hamcrest = "3.0"
 kafka = "4.3.1"
 oracle = "23.26.3.0.0"
