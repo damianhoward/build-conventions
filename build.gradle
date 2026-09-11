@@ -2,7 +2,7 @@
 // plugins and :catalog the shared version catalog. JitPack serves them as
 // com.github.damianhoward.build-conventions:plugins and :catalog.
 plugins {
-    id 'com.diffplug.spotless' version '8.10.1'
+    id 'com.diffplug.spotless' version '8.10.2'
     // The platform scans its own dependencies too: the Kotlin, Spotless and dependency-check
     // plugins it puts on every consumer's buildscript classpath are exactly the ones a consumer
     // scan never sees. `dependencyCheckAggregate` covers :plugins and :catalog.
