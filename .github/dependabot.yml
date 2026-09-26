@@ -5,26 +5,6 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
-    ignore:
-      # Consumers inherit this Kotlin version. CodeQL no longer caps it — github/codeql#21938
-      # closed 2026-07-08 and CI runs CodeQL 2.26.1, which supports Kotlin 2.4. Two things now
-      # hold the pin: CVE-2026-53914 (GHSA-r937-wjx7-w2jp) is fixed in 2.4.20, whose newest
-      # published build is 2.4.20-RC rather than a GA release, so 2.4.10 is no less vulnerable
-      # than 2.3.21; and ktlint 1.5.0 fails under 2.4.10 with NoClassDefFoundError on
-      # EditorConfigDefaults, while even ktlint 1.8.0 still embeds the Kotlin 2.2.21 compiler.
-      #
-      # The range ends at 2.4.20 rather than ignoring the dependency outright, so that 2.4.20
-      # proposes itself the day it ships GA instead of the exception outliving its reason. The
-      # required checks then decide it: the bump only merges if spotlessCheck passes, which is
-      # exactly the ktlint compatibility this is waiting on.
-      #
-      # It does not stop the red run on the Actions tab. GitHub raises a security update job when
-      # an advisory arrives whatever this file says, and that job fails whenever it cannot act —
-      # all_versions_ignored here, security_update_dependency_not_found for the transitive jsoup
-      # and jackson advisories that preceded it. It is one run per advisory, not a schedule, and
-      # the alert rather than the run is what to read.
-      - dependency-name: "org.jetbrains.kotlin:kotlin-gradle-plugin"
-        versions: ["[2.4.0,2.4.20)"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
