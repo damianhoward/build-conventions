@@ -91,7 +91,8 @@ coverage number is only worth reporting if it is measuring the code that matters
 ## Version catalog
 
 `gradle/libs.versions.toml` holds only versions two or more repos genuinely share — hamcrest,
-slf4j, the Oracle driver pair, testcontainers, flyway, kafka-clients, commons-lang3, h2, gson.
+slf4j, the Oracle driver pair, testcontainers, flyway, kafka-clients, commons-lang3, h2, gson,
+and Playwright for the browser tests every repository with a UI carries.
 Application-specific dependencies stay in each repo's build file. Import it in
 `settings.gradle`:
 
@@ -102,7 +103,7 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         create('deps') {
-            from 'com.github.damianhoward.build-conventions:catalog:0.4.13'
+            from 'com.github.damianhoward.build-conventions:catalog:0.5.4'
         }
     }
 }
