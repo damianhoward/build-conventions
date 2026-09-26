@@ -36,43 +36,7 @@ spotless {
 // without the key; this is the half of that contract that was missing.
 def nvdApiKey = providers.environmentVariable('NVD_API_KEY').orNull
 
-// Mirrors kotlin-conventions: every Kotlin artifact carries cpe:/a:jetbrains:kotlin at the
-// compiler's version, and the aggregate sees the modules' Kotlin runtime as well as their own
-// dependencies. CVE-2026-53914 is unsafe deserialization of build-cache metadata — compiler and
-// Gradle-tooling code, not kotlin-stdlib or kotlin-reflect. Kept identical to the module-level
-// file, including the expiry, so the two cannot drift into disagreeing about the same advisory.
-def suppressions = layout.buildDirectory.file('dependency-check/kotlin-cpe-suppressions.xml')
-def writeSuppressions = tasks.register('writeDependencyCheckSuppressions') {
-    description = 'Writes the shared dependency-check suppression file.'
-    outputs.file(suppressions)
-    def target = suppressions
-    doLast {
-        def file = target.get().asFile
-        file.parentFile.mkdirs()
-        file.text = '''<?xml version="1.0" encoding="UTF-8"?>
-<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
-    <suppress until="2026-11-01Z">
-        <notes>CVE-2026-53914 is unsafe deserialization of Kotlin build-cache metadata, which is
-        compiler and Gradle-tooling code. It is matched against kotlin-stdlib and kotlin-reflect
-        only because they carry the same jetbrains:kotlin CPE as the compiler; neither ships any
-        part of the build-cache metadata path. The Kotlin pin is tracked in build-conventions,
-        which suppresses the same advisory against its own toolchain classpath under this same
-        expiry, so no scan reports it until the date passes or the pin moves. This suppression
-        expires so the finding returns if the pin has not moved.</notes>
-        <packageUrl regex="true">^pkg:maven/org\\.jetbrains\\.kotlin/kotlin-(stdlib|reflect).*$</packageUrl>
-        <cve>CVE-2026-53914</cve>
-    </suppress>
-</suppressions>
-'''
-    }
-}
-
-tasks.named('dependencyCheckAggregate') {
-    dependsOn writeSuppressions
-}
-
 dependencyCheck {
-    suppressionFile = suppressions.get().asFile.absolutePath
     failBuildOnCVSS = 7.0f
     formats = ['HTML', 'JSON']
     // Scan what the modules ship, as java-conventions and kotlin-conventions already do. Without
@@ -80,8 +44,7 @@ dependencyCheck {
     // convention plugin itself puts kotlin-gradle-plugin on — orderbook's first completed scan
     // reported 20 findings, every one of them CVE-2026-53914 against a build-time toolchain jar:
     // abi-tools, kotlin-compiler-embeddable, kotlin-build-tools-*, kotlin-daemon-*. None of those
-    // is deployed, and the suppression deliberately names only kotlin-stdlib and kotlin-reflect
-    // rather than growing to cover the whole toolchain.
+    // is deployed.
     scanConfigurations = ['runtimeClasspath']
     if (nvdApiKey) {
         nvd {
