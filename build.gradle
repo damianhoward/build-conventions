@@ -9,7 +9,7 @@ plugins {
     id 'org.owasp.dependencycheck' version '13.0.0'
 }
 
-version = '0.5.3'
+version = '0.5.4'
 
 repositories {
     mavenCentral()

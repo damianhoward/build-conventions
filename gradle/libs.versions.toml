@@ -10,6 +10,7 @@ h2 = "2.5.250"
 hamcrest = "3.0"
 kafka = "4.3.1"
 oracle = "23.26.3.0.0"
+playwright = "1.61.0"
 slf4j = "2.0.20"
 testcontainers = "1.21.4"
 
@@ -24,6 +25,8 @@ hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
 kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka" }
 oracle-jdbc = { module = "com.oracle.database.jdbc:ojdbc17", version.ref = "oracle" }
 oracle-pki = { module = "com.oracle.database.security:oraclepki", version.ref = "oracle" }
+# Every repository with a UI carries a Playwright browser test in its JUnit suite.
+playwright = { module = "com.microsoft.playwright:playwright", version.ref = "playwright" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
