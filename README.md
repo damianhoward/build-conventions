@@ -13,6 +13,10 @@ an application, its main class.
 | `com.damianhoward.java-conventions`   | plain Java        | The same, with Spotless JDK-agnostic Java hygiene in place of ktlint.                                       |
 | `com.damianhoward.root-conventions`   | multi-module root | Repo-wide Spotless (Gradle scripts, CI config, docs) and the OWASP aggregate; modules apply a plugin above. |
 
+The Kotlin serialization compiler plugin ships on the same classpath, so a repository that needs it
+applies `id 'org.jetbrains.kotlin.plugin.serialization'` with no version and gets the compiler the
+conventions pin — the two must match exactly.
+
 Front-end tooling in `kotlin-conventions` is content-driven: web assets under
 `src/main/resources/web` are Prettier-formatted under `spotlessCheck`, and a `package.json`
 wires `npm run lint` (ESLint) into `check`. A repository is different only because of what it
@@ -62,7 +66,7 @@ pluginManagement {
 
 ```groovy
 plugins {
-    id 'com.damianhoward.kotlin-conventions' version '0.4.13'
+    id 'com.damianhoward.kotlin-conventions' version '0.5.5'
     id 'application' // if the repository is an application
 }
 
@@ -91,8 +95,12 @@ coverage number is only worth reporting if it is measuring the code that matters
 ## Version catalog
 
 `gradle/libs.versions.toml` holds only versions two or more repos genuinely share — hamcrest,
-slf4j, the Oracle driver pair, testcontainers, flyway, kafka-clients, commons-lang3, h2, gson,
-and Playwright for the browser tests every repository with a UI carries.
+slf4j, Logback, kotlinx.serialization, the Oracle driver pair, testcontainers, flyway,
+kafka-clients, commons-lang3, h2, gson, and Playwright for the browser tests every repository with
+a UI carries. It also holds the versions the convention plugins apply themselves — the JUnit BOM,
+the lz4 floor and the Kotlin toolchain — because Dependabot cannot read the precompiled plugin
+scripts, and a version written there would never move. The plugin build copies them into the
+jar.
 Application-specific dependencies stay in each repo's build file. Import it in
 `settings.gradle`:
 
@@ -103,7 +111,7 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         create('deps') {
-            from 'com.github.damianhoward.build-conventions:catalog:0.5.4'
+            from 'com.github.damianhoward.build-conventions:catalog:0.5.5'
         }
     }
 }

@@ -27,8 +27,11 @@ repositories {
 dependencies {
     // The real artifacts behind the plugin ids the convention plugins apply. A precompiled
     // script plugin can only `apply` a third-party plugin that is on this project's classpath.
-    implementation 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.20'
-    implementation 'com.diffplug.spotless:spotless-plugin-gradle:8.10.2'
+    implementation libs.kotlin.gradle.plugin
+    // On the classpath so a consumer can apply org.jetbrains.kotlin.plugin.serialization by id
+    // alone, at the exact Kotlin version the conventions compile with.
+    implementation libs.kotlin.serialization.plugin
+    implementation 'com.diffplug.spotless:spotless-plugin-gradle:8.10.3'
     implementation 'org.owasp:dependency-check-gradle:13.0.0'
 
     // The same Jackson floor the convention plugins put under every consumer, applied here
@@ -65,5 +68,16 @@ configurations.configureEach {
         force 'org.jsoup:jsoup:1.23.2'
         force 'org.apache.httpcomponents.client5:httpclient5:5.6.4'
         force 'org.apache.httpcomponents.client5:httpclient5-cache:5.6.4'
+    }
+}
+
+// The versions the convention scripts apply, taken from gradle/libs.versions.toml where Dependabot
+// can see them, and written into the jar for the scripts to read at apply time. A consumer cannot
+// be asked for them: two repositories apply these plugins without importing the catalog.
+def conventionVersions = [junit: libs.versions.junit.get(), lz4: libs.versions.lz4.get()]
+tasks.named('processResources') {
+    inputs.properties(conventionVersions)
+    filesMatching('com/damianhoward/conventions/versions.properties') {
+        expand(conventionVersions)
     }
 }

@@ -19,6 +19,12 @@ java {
     }
 }
 
+// The versions this plugin applies, from the catalog Dependabot watches (see plugins/build.gradle).
+def conventionVersions = new Properties()
+getClass().getResourceAsStream('/com/damianhoward/conventions/versions.properties').withCloseable {
+    conventionVersions.load(it)
+}
+
 dependencies {
     // Jackson arrives transitively — kafka-streams 4.3.1 resolves jackson-databind 2.21.2, which
     // CVE-2026-54512 and CVE-2026-54513 (CVSS 8.1) escape BasicPolymorphicTypeValidator on. Both
@@ -32,10 +38,10 @@ dependencies {
         // XXHash bindings crash the JVM on invalid byte array ranges (CVE-2026-59949, CVSS 6.5),
         // fixed in 1.11.1. A constraint rather than a dependency: it raises the version only in
         // the repositories that already resolve lz4, and adds nothing to the ones that do not.
-        implementation 'at.yawk.lz4:lz4-java:1.11.1'
+        implementation "at.yawk.lz4:lz4-java:${conventionVersions.lz4}"
     }
 
-    testImplementation platform('org.junit:junit-bom:6.1.2')
+    testImplementation platform("org.junit:junit-bom:${conventionVersions.junit}")
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
