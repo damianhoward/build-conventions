@@ -15,6 +15,12 @@ jobs:
   release:
     uses: damianhoward/.github/.github/workflows/release.yml@main
     with:
-      build-command: clean build
-      # Notes only: consumers resolve these plugins from JitPack, which builds the artifact from
-      # the tag itself. Attaching a second copy here would publish two things that could disagree.
+      # The tag is verified, then published to Maven Central, which consumers resolve from. The
+      # GitHub release stays notes-only: a second copy of the artifacts attached there would be two
+      # things that could disagree.
+      build-command: clean build publishAndReleaseToMavenCentral
+    secrets:
+      CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+      CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+      SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}

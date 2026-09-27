@@ -1,15 +1,17 @@
 // The root holds only the repo-wide version and formatting; :plugins publishes the convention
-// plugins and :catalog the shared version catalog. JitPack serves them as
-// com.github.damianhoward.build-conventions:plugins and :catalog.
+// plugins and :catalog the shared version catalog. Maven Central serves them as
+// com.damianhoward:build-conventions-plugins and :build-conventions-catalog.
 plugins {
     id 'com.diffplug.spotless' version '8.10.3'
     // The platform scans its own dependencies too: the Kotlin, Spotless and dependency-check
     // plugins it puts on every consumer's buildscript classpath are exactly the ones a consumer
     // scan never sees. `dependencyCheckAggregate` covers :plugins and :catalog.
     id 'org.owasp.dependencycheck' version '13.0.0'
+    // Publishes :plugins and :catalog to Maven Central through the Central Portal.
+    id 'com.vanniktech.maven.publish' version '0.37.0' apply false
 }
 
-version = '0.5.5'
+version = '0.6.0'
 
 repositories {
     mavenCentral()
@@ -99,5 +101,46 @@ spotless {
         target 'gradle/*.toml'
         trimTrailingWhitespace()
         endWithNewline()
+    }
+}
+
+// What Central requires of every artifact, and is identical for both modules: licence, source
+// control, developer, a signature, and the portal to release through. Each module adds only its own
+// coordinates and what kind of artifact it is.
+subprojects {
+    pluginManager.withPlugin('com.vanniktech.maven.publish') {
+        mavenPublishing {
+            publishToMavenCentral(true)
+            // Signed wherever a key is supplied, which is the release workflow. A local
+            // publishToMavenLocal has none and stays unsigned; Central refuses an unsigned upload.
+            // Tested for emptiness, not presence: the shared release workflow sets the variable for
+            // every caller, and it arrives empty for one that passes no secrets.
+            if (!providers.gradleProperty('signingInMemoryKey').getOrElse('').isBlank()) {
+                signAllPublications()
+            }
+            pom {
+                url = 'https://github.com/damianhoward/build-conventions'
+                inceptionYear = '2026'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution = 'repo'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'damianhoward'
+                        name = 'Damian Howard'
+                        url = 'https://github.com/damianhoward'
+                    }
+                }
+                scm {
+                    url = 'https://github.com/damianhoward/build-conventions'
+                    connection = 'scm:git:https://github.com/damianhoward/build-conventions.git'
+                    developerConnection = 'scm:git:ssh://git@github.com/damianhoward/build-conventions.git'
+                }
+            }
+        }
     }
 }
