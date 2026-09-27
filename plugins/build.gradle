@@ -59,9 +59,7 @@ dependencies {
 // the same release were clean, the constraint alone reproduced it.
 //
 // Forcing is build-local, publishes nothing, and is the right scope anyway. This classpath is a
-// Gradle plugin's, so the exposure never reaches a running service; the copy that does is in
-// stocks-analysis-us, where Tika pulls the same version onto the runtime classpath and a
-// constraint is declared for it there.
+// Gradle plugin's, so the exposure never reaches a running service.
 configurations.configureEach {
     resolutionStrategy {
         force 'org.jsoup:jsoup:1.23.2'
