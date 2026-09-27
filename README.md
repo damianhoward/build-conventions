@@ -1,6 +1,6 @@
 # build-conventions
 
-The shared Gradle build platform for the `damianhoward` repositories, published via JitPack:
+The shared Gradle build platform for the `damianhoward` repositories, published to Maven Central:
 convention plugins plus a shared version catalog (`:catalog`). A repository applies one
 convention plugin and then declares only what is specific to it — its dependencies and, for
 an application, its main class.
@@ -43,21 +43,14 @@ the `java-kotlin` analysis to read.
 
 ## Consuming
 
-`settings.gradle` — add JitPack and map the plugin id to this module:
+Everything is on Maven Central under `com.damianhoward`, and each plugin is published with its
+plugin marker, so `settings.gradle` needs only the repositories:
 
 ```groovy
 pluginManagement {
     repositories {
         gradlePluginPortal()
         mavenCentral()
-        maven { url 'https://jitpack.io' }
-    }
-    resolutionStrategy {
-        eachPlugin {
-            if (requested.id.namespace == 'com.damianhoward') {
-                useModule("com.github.damianhoward.build-conventions:plugins:${requested.version}")
-            }
-        }
     }
 }
 ```
@@ -66,7 +59,7 @@ pluginManagement {
 
 ```groovy
 plugins {
-    id 'com.damianhoward.kotlin-conventions' version '0.5.5'
+    id 'com.damianhoward.kotlin-conventions' version '0.6.0'
     id 'application' // if the repository is an application
 }
 
@@ -107,11 +100,11 @@ Application-specific dependencies stay in each repo's build file. Import it in
 ```groovy
 dependencyResolutionManagement {
     repositories {
-        maven { url 'https://jitpack.io' }
+        mavenCentral()
     }
     versionCatalogs {
         create('deps') {
-            from 'com.github.damianhoward.build-conventions:catalog:0.5.5'
+            from 'com.damianhoward:build-conventions-catalog:0.6.0'
         }
     }
 }

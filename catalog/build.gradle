@@ -2,12 +2,11 @@
 // gradle/libs.versions.toml. Application-specific dependencies stay in each repo's build file.
 plugins {
     id 'version-catalog'
-    id 'maven-publish'
+    id 'com.vanniktech.maven.publish'
 }
 
-group = 'com.github.damianhoward.build-conventions'
+group = 'com.damianhoward'
 version = rootProject.version
-
 
 catalog {
     versionCatalog {
@@ -15,10 +14,11 @@ catalog {
     }
 }
 
-publishing {
-    publications {
-        maven(MavenPublication) {
-            from components.versionCatalog
-        }
+mavenPublishing {
+    configure(new com.vanniktech.maven.publish.VersionCatalog())
+    coordinates('com.damianhoward', 'build-conventions-catalog', version.toString())
+    pom {
+        name = 'damianhoward build-conventions catalog'
+        description = 'The version catalog shared across the damianhoward repositories.'
     }
 }

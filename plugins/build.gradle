@@ -1,18 +1,17 @@
 // The convention plugins. Precompiled Groovy script plugins: each src/main/groovy/*.gradle
-// becomes a plugin whose id is the file's base name. Consumers resolve the plugin ids to this
-// module via a settings resolutionStrategy (see README).
+// becomes a plugin whose id is the file's base name. Each is published to Maven Central with its
+// plugin marker, so a consumer applies it by id and version against mavenCentral() alone.
 plugins {
     id 'groovy-gradle-plugin'
-    id 'maven-publish'
+    id 'com.vanniktech.maven.publish'
 }
 
-group = 'com.github.damianhoward.build-conventions'
+group = 'com.damianhoward'
 version = rootProject.version
 
 java {
     // The plugin JAR targets JDK 21, not 25: a Gradle plugin must load on whatever JVM Gradle
-    // itself runs (17+), and JitPack builds consumers on 21 — a 25-bytecode plugin can't be loaded
-    // there. This is the plugin module's own bytecode only; the convention scripts still set
+    // itself runs (17+), and a 25-bytecode plugin fails to load on anything older. This is the plugin module's own bytecode only; the convention scripts still set
     // languageVersion 25 for consumer code.
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -79,5 +78,16 @@ tasks.named('processResources') {
     inputs.properties(conventionVersions)
     filesMatching('com/damianhoward/conventions/versions.properties') {
         expand(conventionVersions)
+    }
+}
+
+mavenPublishing {
+    // Groovy script plugins carry no API documentation to generate, and Central requires a javadoc
+    // jar all the same; an empty one is what it accepts for that case.
+    configure(new com.vanniktech.maven.publish.GradlePlugin(new com.vanniktech.maven.publish.JavadocJar.Empty(), true))
+    coordinates('com.damianhoward', 'build-conventions-plugins', version.toString())
+    pom {
+        name = 'damianhoward build-conventions plugins'
+        description = 'Convention plugins for the damianhoward repositories: JDK 25 toolchain, coverage gate, formatting, dependency scanning and JUnit wiring.'
     }
 }
