@@ -14,8 +14,19 @@ an application, its main class.
 | `com.damianhoward.root-conventions`   | multi-module root | Repo-wide Spotless (Gradle scripts, CI config, docs) and the OWASP aggregate; modules apply a plugin above. |
 
 The Kotlin serialization compiler plugin ships on the same classpath, so a repository that needs it
-applies `id 'org.jetbrains.kotlin.plugin.serialization'` with no version and gets the compiler the
-conventions pin — the two must match exactly.
+applies it with no version and gets the compiler the conventions pin — the two must match exactly.
+In a module of a multi-module build, whose root has already put this classpath in place, that is
+`id 'org.jetbrains.kotlin.plugin.serialization'` in the plugins block. A single-module build
+resolves its plugins block before the classpath exists, so it applies the plugin after it:
+
+```groovy
+plugins {
+    id 'com.damianhoward.kotlin-conventions' version '…'
+}
+apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
+```
+
+Writing a version instead would work and would let the compiler plugin drift from the compiler.
 
 Front-end tooling in `kotlin-conventions` is content-driven: web assets under
 `src/main/resources/web` are Prettier-formatted under `spotlessCheck`, and a `package.json`
