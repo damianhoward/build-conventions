@@ -30,7 +30,7 @@ dependencies {
     // On the classpath so a consumer can apply org.jetbrains.kotlin.plugin.serialization by id
     // alone, at the exact Kotlin version the conventions compile with.
     implementation libs.kotlin.serialization.plugin
-    implementation 'com.diffplug.spotless:spotless-plugin-gradle:8.10.3'
+    implementation 'com.diffplug.spotless:spotless-plugin-gradle:8.10.4'
     implementation 'org.owasp:dependency-check-gradle:13.0.0'
 
     // The same Jackson floor the convention plugins put under every consumer, applied here
