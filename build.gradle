@@ -2,7 +2,7 @@
 // plugins and :catalog the shared version catalog. Maven Central serves them as
 // com.damianhoward:build-conventions-plugins and :build-conventions-catalog.
 plugins {
-    id 'com.diffplug.spotless' version '8.10.3'
+    id 'com.diffplug.spotless' version '8.10.4'
     // The platform scans its own dependencies too: the Kotlin, Spotless and dependency-check
     // plugins it puts on every consumer's buildscript classpath are exactly the ones a consumer
     // scan never sees. `dependencyCheckAggregate` covers :plugins and :catalog.
