@@ -11,7 +11,7 @@
 [versions]
 commons-lang = "3.21.0"
 flyway = "13.10.3"
-gson = "2.14.0"
+gson = "2.15.0"
 h2 = "2.5.252"
 hamcrest = "3.0"
 junit = "6.1.3"
