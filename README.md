@@ -7,11 +7,12 @@ an application, its main class.
 
 ## Plugins
 
-| Plugin                                | For               | Provides                                                                                                    |
-| ------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- |
-| `com.damianhoward.kotlin-conventions` | Kotlin JVM        | JDK 25 toolchain, pinned Kotlin, 90% JaCoCo instruction gate, Spotless (ktlint + Prettier), OWASP, JUnit 6. |
-| `com.damianhoward.java-conventions`   | plain Java        | The same, with Spotless JDK-agnostic Java hygiene in place of ktlint.                                       |
-| `com.damianhoward.root-conventions`   | multi-module root | Repo-wide Spotless (Gradle scripts, CI config, docs) and the OWASP aggregate; modules apply a plugin above. |
+| Plugin                                | For                | Provides                                                                                                    |
+| ------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `com.damianhoward.kotlin-conventions` | Kotlin JVM         | JDK 25 toolchain, pinned Kotlin, 90% JaCoCo instruction gate, Spotless (ktlint + Prettier), OWASP, JUnit 6. |
+| `com.damianhoward.java-conventions`   | plain Java         | The same, with Spotless JDK-agnostic Java hygiene in place of ktlint.                                       |
+| `com.damianhoward.root-conventions`   | multi-module root  | Repo-wide Spotless (Gradle scripts, CI config, docs) and the OWASP aggregate; modules apply a plugin above. |
+| `com.damianhoward.runtime-image`      | a deployed service | A jlinked runtime inside the distribution, a launcher that prefers it, and checks that it runs the service. |
 
 The Kotlin serialization compiler plugin ships on the same classpath, so a repository that needs it
 applies it with no version and gets the compiler the conventions pin — the two must match exactly.
@@ -28,6 +29,21 @@ apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
 
 Writing a version instead would work and would let the compiler plugin drift from the compiler.
 
+A service applies `runtime-image` beside `application` and declares the modules it uses:
+
+```groovy
+runtimeImage {
+    modules = ['java.base', 'java.management', 'jdk.httpserver']
+    smokePaths = ['/readyz', '/']
+}
+```
+
+The image adds `jcmd` and JFR and leaves out the compiler. `check` fails if `jdeps` finds the code
+using a module the image lacks, refuses to link from a JDK older than the catalog's
+`runtime-jdk-floor`, and starts the installed distribution with `JAVA_HOME` pointing at a JDK that
+does not exist, requiring a 200 from `/healthz` and each smoke path. Temurin 25 ships no `jmods`, so
+an image is linked on the platform it runs on: CI's Linux runner for the boxes.
+
 Front-end tooling in `kotlin-conventions` is content-driven: web assets under
 `src/main/resources/web` are Prettier-formatted under `spotlessCheck`, and a `package.json`
 wires `npm run lint` (ESLint) into `check`. A repository is different only because of what it
@@ -39,7 +55,9 @@ This is the one repository whose bytecode every other repository executes: its p
 each consumer's buildscript classpath, and the shared CI calls those builds with
 `secrets: inherit`. It carries the same gates as its consumers, minus one that does not apply:
 
-`ci.yml` runs Spotless and `check`. `dep-review.yml` fails a pull request on a high-severity
+`ci.yml` runs Spotless and `check`, which runs the TestKit tests of `runtime-image` against a small
+application: the image carries the diagnostic tools and no compiler, the distribution runs on it, and
+a missing module, a JDK below the floor and a failing smoke path each fail the build. `dep-review.yml` fails a pull request on a high-severity
 advisory in what the diff adds. `dependabot-automerge.yml` behaves as it does everywhere else;
 merges still wait on the required checks.
 

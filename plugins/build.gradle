@@ -79,7 +79,7 @@ configurations.configureEach {
 // The versions the convention scripts apply, taken from gradle/libs.versions.toml where Dependabot
 // can see them, and written into the jar for the scripts to read at apply time. A consumer cannot
 // be asked for them: two repositories apply these plugins without importing the catalog.
-def conventionVersions = [junit: libs.versions.junit.get(), lz4: libs.versions.lz4.get(), snappy: libs.versions.snappy.get()]
+def conventionVersions = [junit: libs.versions.junit.get(), lz4: libs.versions.lz4.get(), snappy: libs.versions.snappy.get(), runtimeJdkFloor: libs.versions.runtime.jdk.floor.get()]
 tasks.named('processResources') {
     inputs.properties(conventionVersions)
     filesMatching('com/damianhoward/conventions/versions.properties') {
@@ -94,6 +94,28 @@ mavenPublishing {
     coordinates('com.damianhoward', 'build-conventions-plugins', version.toString())
     pom {
         name = 'damianhoward build-conventions plugins'
-        description = 'Convention plugins for the damianhoward repositories: JDK 25 toolchain, coverage gate, formatting, dependency scanning and JUnit wiring.'
+        description = 'Convention plugins for the damianhoward repositories: JDK 25 toolchain, coverage gate, formatting, dependency scanning, JUnit wiring, and per-release runtime images.'
     }
+}
+
+// The first tests this repository has: the runtime-image convention, exercised through TestKit
+// against a small application. A defect here reaches every service that ships its own runtime, and
+// its failure modes -- a missing module, an old JDK, a launcher that ignores the image -- only show
+// at run time in production, so they are proven here instead.
+dependencies {
+    testImplementation platform(libs.junit.bom)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation gradleTestKit()
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    // The fixture links its image from JDK 25, while this project's own toolchain is 21. Its builds
+    // are told where 25 is rather than left to discover one, so a test never links from a JDK the
+    // machine happens to have lying around.
+    def jdk25 = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) }
+        .map { it.metadata.installationPath.asFile.path }
+    inputs.property('fixtureJdk', jdk25)
+    jvmArgumentProviders.add({ ["-Dfixture.jdk=${jdk25.get()}".toString()] } as CommandLineArgumentProvider)
 }

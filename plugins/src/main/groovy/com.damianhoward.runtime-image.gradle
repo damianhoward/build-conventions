@@ -1,0 +1,95 @@
+// A service's release carries its own Java runtime: a jlink image of the modules the service uses,
+// plus jcmd and JFR so it can be diagnosed, linked from the JDK toolchain its tests run on. A release
+// and its rollback each bring the runtime they were built and probed with, a box's JDK no longer
+// decides what the service runs on, and production carries no compiler. Apply it beside
+// `application`; the service declares its modules and smoke paths, and nothing else varies.
+//
+//   runtimeImage {
+//       modules = ['java.base', 'java.management', 'jdk.httpserver']
+//       smokePaths = ['/readyz', '/']
+//   }
+//
+// `check` then fails if jdeps finds the code using a module the image lacks, and starts the installed
+// distribution with JAVA_HOME pointing at a JDK that does not exist and probes it.
+
+import com.damianhoward.conventions.runtime.DistributionSmokeTest
+import com.damianhoward.conventions.runtime.RuntimeImage
+import com.damianhoward.conventions.runtime.RuntimeImageExtension
+import com.damianhoward.conventions.runtime.RuntimeModulesCheck
+
+def conventionVersions = new Properties()
+getClass().getResourceAsStream('/com/damianhoward/conventions/versions.properties').withCloseable {
+    conventionVersions.load(it)
+}
+
+// What every image needs whatever the service: a way to ask a running service for a heap
+// histogram, a thread dump or a flight recording. jdk.jcmd brings jdk.attach with it.
+def diagnosticModules = ['jdk.jcmd', 'jdk.jfr']
+
+def extension = extensions.create('runtimeImage', RuntimeImageExtension)
+extension.smokePaths.convention([])
+extension.smokeEnvironment.convention([:])
+extension.minimumJdk.convention(conventionVersions.runtimeJdkFloor)
+
+pluginManager.withPlugin('application') {
+    def toolchainHome = javaToolchains.launcherFor(java.toolchain).map { it.metadata.installationPath }
+    def imageModules = extension.modules.map { (it + diagnosticModules).unique() }
+
+    def runtimeImage = tasks.register('runtimeImage', RuntimeImage) {
+        group = 'distribution'
+        description = 'Links the runtime the distribution carries.'
+        modules = imageModules
+        jdkHome = toolchainHome
+        jdkRelease = toolchainHome.map { it.file('release').asFile.text }
+        minimumJdk = extension.minimumJdk
+        image = layout.buildDirectory.dir('runtime')
+    }
+
+    def verifyRuntimeModules = tasks.register('verifyRuntimeModules', RuntimeModulesCheck) {
+        group = 'verification'
+        description = 'Fails if the code uses a JDK module the runtime image lacks.'
+        modules = imageModules
+        jdkHome = toolchainHome
+        jars.from(tasks.named('jar'), configurations.runtimeClasspath)
+        report = layout.buildDirectory.file('runtime-modules.txt')
+    }
+
+    distributions.main.contents {
+        from(runtimeImage) { into 'runtime' }
+    }
+
+    // Gradle's launchers obey JAVA_HOME, and the units set it to the box's JDK. Each is told to
+    // prefer the release's own runtime, right after it has worked out where the release is, and the
+    // build fails if Gradle's template no longer has the line it is anchored on.
+    tasks.named('startScripts') {
+        doLast {
+            def unix = new File(outputDir, applicationName)
+            def unixAnchor = 'APP_HOME=$( cd -P "${APP_HOME:-./}.." > /dev/null && printf \'%s\\n\' "$PWD" ) || exit\n'
+            if (!unix.text.contains(unixAnchor)) {
+                throw new GradleException('the Unix launcher changed shape; re-anchor the runtime line')
+            }
+            unix.text = unix.text.replace(unixAnchor, unixAnchor + '[ -x "$APP_HOME/runtime/bin/java" ] && JAVA_HOME=$APP_HOME/runtime\n')
+
+            def windows = new File(outputDir, "${applicationName}.bat")
+            def windowsAnchor = 'for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi\r\n'
+            if (!windows.text.contains(windowsAnchor)) {
+                throw new GradleException('the Windows launcher changed shape; re-anchor the runtime line')
+            }
+            windows.text = windows.text.replace(windowsAnchor, windowsAnchor + 'if exist "%APP_HOME%\\runtime\\bin\\java.exe" set JAVA_HOME=%APP_HOME%\\runtime\r\n')
+        }
+    }
+
+    def smokeTestDistribution = tasks.register('smokeTestDistribution', DistributionSmokeTest) {
+        group = 'verification'
+        description = 'Starts the installed distribution on its own runtime and probes it.'
+        install = tasks.named('installDist').map { layout.projectDirectory.dir(it.destinationDir.path) }
+        launcher = application.applicationName
+        paths = extension.smokePaths
+        environment = extension.smokeEnvironment
+        log = layout.buildDirectory.file('smoke-test/distribution.log')
+    }
+
+    tasks.named('check') {
+        dependsOn verifyRuntimeModules, smokeTestDistribution
+    }
+}
