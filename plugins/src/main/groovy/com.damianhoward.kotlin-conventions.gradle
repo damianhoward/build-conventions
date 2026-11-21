@@ -56,6 +56,11 @@ dependencies {
         // fixed in 1.11.1. A constraint rather than a dependency: it raises the version only in
         // the repositories that already resolve lz4, and adds nothing to the ones that do not.
         implementation "at.yawk.lz4:lz4-java:${conventionVersions.lz4}"
+
+        // The same path brings snappy-java: kafka-clients 4.4.0, the current release, still pulls
+        // 1.1.10.7, which GHSA-gwq9-9ffj-mvrv, GHSA-q233-g92q-qxp6 and GHSA-xqrx-qh46-34m7 cover.
+        // All three are fixed in 1.1.10.9.
+        implementation "org.xerial.snappy:snappy-java:${conventionVersions.snappy}"
     }
 
     testImplementation platform("org.junit:junit-bom:${conventionVersions.junit}")
