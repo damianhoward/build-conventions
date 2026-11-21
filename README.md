@@ -70,7 +70,7 @@ pluginManagement {
 
 ```groovy
 plugins {
-    id 'com.damianhoward.kotlin-conventions' version '0.6.0'
+    id 'com.damianhoward.kotlin-conventions' version '0.6.1'
     id 'application' // if the repository is an application
 }
 
@@ -115,7 +115,7 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         create('deps') {
-            from 'com.damianhoward:build-conventions-catalog:0.6.0'
+            from 'com.damianhoward:build-conventions-catalog:0.6.1'
         }
     }
 }
