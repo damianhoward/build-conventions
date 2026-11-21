@@ -102,9 +102,9 @@ coverage number is only worth reporting if it is measuring the code that matters
 slf4j, Logback, kotlinx.serialization, the Oracle driver pair, testcontainers, flyway,
 kafka-clients, commons-lang3, h2, gson, and Playwright for the browser tests every repository with
 a UI carries. It also holds the versions the convention plugins apply themselves — the JUnit BOM,
-the lz4 floor and the Kotlin toolchain — because Dependabot cannot read the precompiled plugin
-scripts, and a version written there would never move. The plugin build copies them into the
-jar.
+the lz4 and snappy floors and the Kotlin toolchain — because Dependabot cannot read the
+precompiled plugin scripts, and a version written there would never move. The plugin build copies
+them into the jar.
 Application-specific dependencies stay in each repo's build file. Import it in
 `settings.gradle`:
 
