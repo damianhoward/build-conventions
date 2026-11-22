@@ -1,16 +1,15 @@
-// A service's release carries its own Java runtime: a jlink image of the modules the service uses,
-// plus jcmd and JFR so it can be diagnosed, linked from the JDK toolchain its tests run on. A release
-// and its rollback each bring the runtime they were built and probed with, a box's JDK no longer
-// decides what the service runs on, and production carries no compiler. Apply it beside
-// `application`; the service declares its modules and smoke paths, and nothing else varies.
+// A service's release carries its own Java runtime: a jlink image linked from the JDK toolchain its
+// tests run on. A release and its rollback each bring the runtime they were built with, a box's JDK
+// no longer decides what the service runs on, and production carries no compiler. Apply it beside
+// `application`; a service declares its smoke paths, and nothing else varies.
 //
 //   runtimeImage {
-//       modules = ['java.base', 'java.management', 'jdk.httpserver']
 //       smokePaths = ['/readyz', '/']
 //   }
 //
-// `check` then fails if jdeps finds the code using a module the image lacks, and starts the installed
-// distribution with JAVA_HOME pointing at a JDK that does not exist and probes it.
+// Every image carries the same modules, named once below. `check` fails if jdeps finds the code
+// using a module outside that set, and starts the installed distribution with JAVA_HOME pointing at
+// a JDK that does not exist and probes it.
 
 import com.damianhoward.conventions.runtime.DistributionSmokeTest
 import com.damianhoward.conventions.runtime.RuntimeImage
@@ -22,18 +21,29 @@ getClass().getResourceAsStream('/com/damianhoward/conventions/versions.propertie
     conventionVersions.load(it)
 }
 
-// What every image needs whatever the service: a way to ask a running service for a heap
-// histogram, a thread dump or a flight recording. jdk.jcmd brings jdk.attach with it.
-def diagnosticModules = ['jdk.jcmd', 'jdk.jfr']
+// One module set for every service rather than a minimal set per service. A minimal set has to be
+// right about what each service loads by name -- a JDBC driver, a SASL client, a JNDI provider --
+// which jdeps cannot see, and getting it wrong surfaces as a missing class on the first connection
+// in production. This set holds every module the five services were seen to load in production
+// over a day of real traffic, plus every module jdeps reports for them, for about 30 MB more than
+// the smallest image would be: 116 MB on disk against 84 MB, and nothing to keep in step per
+// service. jdk.jcmd and jdk.jfr are there so a running service can be asked for a heap histogram,
+// a thread dump or a flight recording; the compiler and the development tools are not.
+def imageModules = [
+    'java.se',
+    'jdk.charsets', 'jdk.crypto.cryptoki', 'jdk.httpserver', 'jdk.jcmd', 'jdk.jfr', 'jdk.localedata',
+    'jdk.management', 'jdk.naming.dns', 'jdk.net', 'jdk.security.auth', 'jdk.security.jgss',
+    'jdk.unsupported', 'jdk.zipfs',
+]
 
 def extension = extensions.create('runtimeImage', RuntimeImageExtension)
 extension.smokePaths.convention([])
 extension.smokeEnvironment.convention([:])
 extension.minimumJdk.convention(conventionVersions.runtimeJdkFloor)
+extension.startsInCi.convention(true)
 
 pluginManager.withPlugin('application') {
     def toolchainHome = javaToolchains.launcherFor(java.toolchain).map { it.metadata.installationPath }
-    def imageModules = extension.modules.map { (it + diagnosticModules).unique() }
 
     def runtimeImage = tasks.register('runtimeImage', RuntimeImage) {
         group = 'distribution'
@@ -48,7 +58,7 @@ pluginManager.withPlugin('application') {
     def verifyRuntimeModules = tasks.register('verifyRuntimeModules', RuntimeModulesCheck) {
         group = 'verification'
         description = 'Fails if the code uses a JDK module the runtime image lacks.'
-        modules = imageModules
+        image = runtimeImage.flatMap { it.image }
         jdkHome = toolchainHome
         jars.from(tasks.named('jar'), configurations.runtimeClasspath)
         report = layout.buildDirectory.file('runtime-modules.txt')
@@ -87,6 +97,8 @@ pluginManager.withPlugin('application') {
         paths = extension.smokePaths
         environment = extension.smokeEnvironment
         log = layout.buildDirectory.file('smoke-test/distribution.log')
+        def startsInCi = extension.startsInCi
+        onlyIf('the service declares it cannot start in CI') { startsInCi.get() }
     }
 
     tasks.named('check') {

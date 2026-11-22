@@ -48,7 +48,7 @@ class RuntimeImagePluginTest {
         def source = new File(project, 'src/main/java/fixture')
         source.mkdirs()
         new File(source, 'Main.java').text = MAIN
-        build(modules: "['java.base', 'jdk.httpserver']", smokePaths: "['/hello']")
+        build(smokePaths: "['/hello']")
     }
 
     private void build(Map settings) {
@@ -64,9 +64,9 @@ class RuntimeImagePluginTest {
                 mainClass = 'fixture.Main'
             }
             runtimeImage {
-                modules = ${settings.modules}
                 smokePaths = ${settings.smokePaths}
                 ${settings.minimumJdk ? "minimumJdk = '${settings.minimumJdk}'" : ''}
+                ${settings.startsInCi != null ? "startsInCi = ${settings.startsInCi}" : ''}
             }
             """.stripIndent()
     }
@@ -84,6 +84,10 @@ class RuntimeImagePluginTest {
         def runtime = new File(project, 'build/install/fixture/runtime')
         def modules = new File(runtime, 'release').readLines().find { it.startsWith('MODULES=') }
         assertTrue(modules.contains('jdk.httpserver'), modules)
+        // Resolved through java.se, and the modules a JDBC driver and Logback load by name.
+        assertTrue(modules.contains('java.sql'), modules)
+        assertTrue(modules.contains('java.logging'), modules)
+        assertTrue(modules.contains('jdk.naming.dns'), modules)
         assertTrue(modules.contains('jdk.jcmd'), modules)
         assertTrue(modules.contains('jdk.jfr'), modules)
         assertFalse(modules.contains('jdk.compiler'), modules)
@@ -93,16 +97,32 @@ class RuntimeImagePluginTest {
 
     @Test
     void 'fails when the code uses a module the image leaves out'() {
-        build(modules: "['java.base']", smokePaths: "[]")
+        // The compiler is the module every image leaves out on purpose.
+        new File(project, 'src/main/java/fixture/UsesCompiler.java').text = '''            package fixture;
+
+            public class UsesCompiler {
+                public static Object tree() { return com.sun.source.tree.Tree.Kind.CLASS; }
+            }
+            '''.stripIndent()
 
         BuildResult result = runner('verifyRuntimeModules').buildAndFail()
 
-        assertTrue(result.output.contains('The code uses jdk.httpserver, which the runtime image does not include'), result.output)
+        assertTrue(result.output.contains('The code uses jdk.compiler, which the runtime image does not include'), result.output)
+    }
+
+    @Test
+    void 'a service that cannot start in CI skips the smoke test'() {
+        build(smokePaths: "['/hello']", startsInCi: false)
+
+        BuildResult result = runner('check').build()
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(':verifyRuntimeModules').outcome)
+        assertEquals(TaskOutcome.SKIPPED, result.task(':smokeTestDistribution').outcome)
     }
 
     @Test
     void 'refuses to link from a JDK below the floor'() {
-        build(modules: "['java.base', 'jdk.httpserver']", smokePaths: "[]", minimumJdk: '99')
+        build(smokePaths: "[]", minimumJdk: '99')
 
         BuildResult result = runner('runtimeImage').buildAndFail()
 
@@ -112,7 +132,7 @@ class RuntimeImagePluginTest {
 
     @Test
     void 'fails when a smoke path does not answer 200 on the image'() {
-        build(modules: "['java.base', 'jdk.httpserver']", smokePaths: "['/missing']")
+        build(smokePaths: "['/missing']")
 
         BuildResult result = runner('smokeTestDistribution').buildAndFail()
 
