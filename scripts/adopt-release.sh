@@ -32,22 +32,38 @@ AUTHOR_NAME="${ADOPT_AUTHOR_NAME:-$(git -C "$(dirname "$0")" config user.name)}"
 AUTHOR_EMAIL="${ADOPT_AUTHOR_EMAIL:-$(git -C "$(dirname "$0")" config user.email)}"
 
 # The publish step finishing is not the version being served, and a consumer resolving it too early
-# fails its build -- trading-desk's CodeQL did exactly that on 0.6.2. A plugin marker is checked as
-# well as the two artifacts because consumers resolve plugins by id through it.
+# fails its build -- trading-desk's CodeQL did exactly that on 0.6.2. Consumers resolve each plugin
+# by id through its own marker, and Central does not serve a release's files together: on 0.7.0 the
+# kotlin-conventions marker answered while runtime-image's still did not, fifteen minutes later,
+# and visitor-analytics' deploy failed to resolve it. So every marker is waited for, named from the
+# plugin scripts themselves so a new plugin cannot be missed.
 served() { curl -fsS -o /dev/null --max-time 20 "$CENTRAL/$1/$VERSION/$2-$VERSION.pom"; }
+
+PLUGIN_IDS=()
+for script in "$(dirname "$0")"/../plugins/src/main/groovy/*.gradle; do
+  [ -e "$script" ] && PLUGIN_IDS+=("$(basename "$script" .gradle)")
+done
+
+all_served() {
+  served build-conventions-plugins build-conventions-plugins &&
+    served build-conventions-catalog build-conventions-catalog || return 1
+  local id
+  for id in "${PLUGIN_IDS[@]}"; do
+    served "${id#com.damianhoward.}/$id.gradle.plugin" "$id.gradle.plugin" || return 1
+  done
+}
 
 await_central() {
   local attempts=90 attempt # 30 minutes at 20 s
+  [ "${#PLUGIN_IDS[@]}" -gt 0 ] || { echo "::error::no plugin scripts found to wait for"; exit 1; }
   for attempt in $(seq "$attempts"); do
-    if served build-conventions-plugins build-conventions-plugins &&
-      served build-conventions-catalog build-conventions-catalog &&
-      served kotlin-conventions/com.damianhoward.kotlin-conventions.gradle.plugin com.damianhoward.kotlin-conventions.gradle.plugin; then
-      echo "Maven Central serves $VERSION"
+    if all_served; then
+      echo "Maven Central serves $VERSION: both artifacts and ${#PLUGIN_IDS[@]} plugin markers"
       return
     fi
     [ "$attempt" -eq "$attempts" ] || sleep 20
   done
-  echo "::error::Maven Central did not serve $VERSION within 30 minutes; no consumer was changed"
+  echo "::error::Maven Central did not serve all of $VERSION within 30 minutes; no consumer was changed"
   exit 1
 }
 
