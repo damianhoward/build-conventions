@@ -24,3 +24,35 @@ jobs:
       CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
       SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
       SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+
+  # A release is not delivered until its consumers run it, so the release proposes that itself:
+  # once Maven Central serves the version, every repository that pins build-conventions gets a pull
+  # request moving the pin, gated by its own CI and merged by the shared auto-merge.
+  adopt:
+    needs: release
+    runs-on: ubuntu-26.04
+    # Central usually serves a release within minutes; the script gives up after 30.
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The app rather than GITHUB_TOKEN: a pull request opened with GITHUB_TOKEN starts no
+      # workflows, so its required checks would never report, and GITHUB_TOKEN cannot reach the
+      # other repositories at all. No `repositories:` list, so the token covers every repository
+      # the app is installed on, which is the organisation.
+      - name: Mint a token for the consumers
+        id: token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: Iv23liKETBZTId31TxdS
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: damianhoward
+
+      - name: Propose the release to every consumer
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          ADOPT_AUTHOR_NAME: damianhoward-automerge[bot]
+          ADOPT_AUTHOR_EMAIL: damianhoward-automerge[bot]@users.noreply.github.com
+        run: bash scripts/adopt-release.sh "$GITHUB_REF_NAME"

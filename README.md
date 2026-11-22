@@ -29,20 +29,28 @@ apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
 
 Writing a version instead would work and would let the compiler plugin drift from the compiler.
 
-A service applies `runtime-image` beside `application` and declares the modules it uses:
+A service applies `runtime-image` beside `application` and declares the paths its smoke test probes:
 
 ```groovy
 runtimeImage {
-    modules = ['java.base', 'java.management', 'jdk.httpserver']
     smokePaths = ['/readyz', '/']
 }
 ```
 
-The image adds `jcmd` and JFR and leaves out the compiler. `check` fails if `jdeps` finds the code
-using a module the image lacks, refuses to link from a JDK older than the catalog's
-`runtime-jdk-floor`, and starts the installed distribution with `JAVA_HOME` pointing at a JDK that
-does not exist, requiring a 200 from `/healthz` and each smoke path. Temurin 25 ships no `jmods`, so
-an image is linked on the platform it runs on: CI's Linux runner for the boxes.
+Every image carries the same modules, named once in the convention: `java.se` and the `jdk.*`
+modules the services load, including `jcmd` and JFR so a running service can be diagnosed, and
+without the compiler. One generous set rather than a minimal one per service, because a minimal set
+has to be right about what each service loads by name (a JDBC driver, a SASL client, a JNDI
+provider), which `jdeps` cannot see. The set covers every module the services loaded over a day of
+production traffic, for about 30 MB more than the smallest image.
+
+`check` fails if `jdeps` finds the code using a module the linked image does not hold, refuses to
+link from a JDK older than the catalog's `runtime-jdk-floor`, and starts the installed distribution
+with `JAVA_HOME` pointing at a JDK that does not exist, requiring a 200 from `/healthz` and each
+smoke path. A service that migrates a database before it listens sets `startsInCi = false`, which
+skips the smoke test; the deploy's health gate, which requires the service's own readiness, is then
+its first start on the image. Temurin 25 ships no `jmods`, so an image is linked on the platform it
+runs on: CI's Linux runner for the boxes.
 
 Front-end tooling in `kotlin-conventions` is content-driven: web assets under
 `src/main/resources/web` are Prettier-formatted under `spotlessCheck`, and a `package.json`
@@ -57,7 +65,8 @@ each consumer's buildscript classpath, and the shared CI calls those builds with
 
 `ci.yml` runs Spotless and `check`, which runs the TestKit tests of `runtime-image` against a small
 application: the image carries the diagnostic tools and no compiler, the distribution runs on it, and
-a missing module, a JDK below the floor and a failing smoke path each fail the build. `dep-review.yml` fails a pull request on a high-severity
+a missing module, a JDK below the floor and a failing smoke path each fail the build, and a service
+that cannot start in CI skips its smoke test. `dep-review.yml` fails a pull request on a high-severity
 advisory in what the diff adds. `dependabot-automerge.yml` behaves as it does everywhere else;
 merges still wait on the required checks.
 
@@ -69,6 +78,17 @@ consumer's own scan does not read, so this is the only scan in the estate that s
 CodeQL is deliberately absent. The convention plugins are precompiled Gradle script plugins
 (`plugins/src/main/groovy/*.gradle`), and the repository holds no Java or Kotlin source for
 the `java-kotlin` analysis to read.
+
+## Releasing
+
+Pushing a tag (`0.7.0`, with no leading `v`) publishes to Maven Central. Once Central serves the
+version, the release workflow runs `scripts/adopt-release.sh`, which opens an
+`Adopt build-conventions <version>` pull request in every repository that pins it. Each is gated by
+its own required checks and merged by the shared auto-merge, and a service redeploys behind its
+health gate. A consumer the release breaks stays red and unmerged.
+
+Raising `runtime-jdk-floor` and releasing is how a Temurin update reaches every service that carries
+its own runtime: each relinks its image, from a new commit, on the JDK the shared workflows pin.
 
 ## Consuming
 
@@ -88,7 +108,7 @@ pluginManagement {
 
 ```groovy
 plugins {
-    id 'com.damianhoward.kotlin-conventions' version '0.6.2'
+    id 'com.damianhoward.kotlin-conventions' version '0.7.0'
     id 'application' // if the repository is an application
 }
 
@@ -133,7 +153,7 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         create('deps') {
-            from 'com.damianhoward:build-conventions-catalog:0.6.2'
+            from 'com.damianhoward:build-conventions-catalog:0.7.0'
         }
     }
 }
