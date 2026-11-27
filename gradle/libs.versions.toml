@@ -24,7 +24,7 @@ lz4 = "1.14.1"
 # build carrying the CVE-2026-91403 blocked.certs fix. It moves only for a fix no image may ship without.
 runtime-jdk-floor = "25.0.5.1+2"
 oracle = "23.26.4.0.0"
-playwright = "1.65.0"
+playwright = "1.65.1"
 slf4j = "2.0.20"
 snappy = "1.1.10.12"
 testcontainers = "1.21.4"
